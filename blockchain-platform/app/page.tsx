@@ -171,7 +171,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="ml-auto font-medium">
                           <Link
-                            href="#"
+                            href={`/asset/000${i}`}
                             className="flex items-center text-blue-600"
                           >
                             View Details
