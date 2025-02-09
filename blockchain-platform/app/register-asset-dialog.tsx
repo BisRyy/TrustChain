@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { CalendarIcon, Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
-import { useForm, useFieldArray } from "react-hook-form"
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -14,27 +14,49 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { contract } from "@/lib/client";
+import { prepareContractCall } from "thirdweb";
+import { useSendTransaction } from "thirdweb/react";
 
-type PropertyDataType = "text" | "number" | "date" | "boolean" | "url" | "email" | "longtext" | "file" | "color"
+type PropertyDataType =
+  | "text"
+  | "number"
+  | "date"
+  | "boolean"
+  | "url"
+  | "email"
+  | "longtext"
+  | "file"
+  | "color";
 
 interface AssetProperty {
-  key: string
-  value: string
-  dataType: PropertyDataType
+  key: string;
+  value: string;
+  dataType: PropertyDataType;
 }
 
 interface RegisterAssetForm {
-  assetName: string
-  assetId: string
-  properties: AssetProperty[]
+  assetName: string;
+  assetId: string;
+  properties: AssetProperty[];
 }
 
 const DATA_TYPES: { label: string; value: PropertyDataType }[] = [
@@ -47,10 +69,12 @@ const DATA_TYPES: { label: string; value: PropertyDataType }[] = [
   { label: "Long Text", value: "longtext" },
   { label: "File", value: "file" },
   { label: "Color", value: "color" },
-]
+];
 
 export function RegisterAssetDialog() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
+  const { mutate: sendTransaction } = useSendTransaction();
+
   const {
     register,
     control,
@@ -64,16 +88,16 @@ export function RegisterAssetDialog() {
       assetId: "",
       properties: [],
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: "properties",
-  })
+  });
 
   const addProperty = () => {
-    append({ key: "", value: "", dataType: "text" })
-  }
+    append({ key: "", value: "", dataType: "text" });
+  };
 
   const PropertyInput = ({
     index,
@@ -81,16 +105,25 @@ export function RegisterAssetDialog() {
     value,
     onChange,
   }: {
-    index: number
-    dataType: PropertyDataType
-    value: string
-    onChange: (value: string) => void
+    index: number;
+    dataType: PropertyDataType;
+    value: string;
+    onChange: (value: string) => void;
   }) => {
-    const [date, setDate] = useState<Date | undefined>(value ? new Date(value) : undefined)
+    const [date, setDate] = useState<Date | undefined>(
+      value ? new Date(value) : undefined
+    );
 
     switch (dataType) {
       case "number":
-        return <Input type="number" placeholder="Value" value={value} onChange={(e) => onChange(e.target.value)} />
+        return (
+          <Input
+            type="number"
+            placeholder="Value"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
 
       case "date":
         return (
@@ -98,7 +131,10 @@ export function RegisterAssetDialog() {
             <PopoverTrigger asChild>
               <Button
                 variant={"outline"}
-                className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !date && "text-muted-foreground"
+                )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {date ? format(date, "PPP") : <span>Pick a date</span>}
@@ -109,16 +145,16 @@ export function RegisterAssetDialog() {
                 mode="single"
                 selected={date}
                 onSelect={(newDate) => {
-                  setDate(newDate)
+                  setDate(newDate);
                   if (newDate) {
-                    onChange(newDate.toISOString())
+                    onChange(newDate.toISOString());
                   }
                 }}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
-        )
+        );
 
       case "boolean":
         return (
@@ -131,23 +167,29 @@ export function RegisterAssetDialog() {
               <SelectItem value="false">No</SelectItem>
             </SelectContent>
           </Select>
-        )
+        );
 
       case "longtext":
-        return <Textarea placeholder="Value" value={value} onChange={(e) => onChange(e.target.value)} />
+        return (
+          <Textarea
+            placeholder="Value"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
 
       case "file":
         return (
           <Input
             type="file"
             onChange={(e) => {
-              const file = e.target.files?.[0]
+              const file = e.target.files?.[0];
               if (file) {
-                onChange(file.name)
+                onChange(file.name);
               }
             }}
           />
-        )
+        );
 
       case "color":
         return (
@@ -166,7 +208,7 @@ export function RegisterAssetDialog() {
               onChange={(e) => onChange(e.target.value)}
             />
           </div>
-        )
+        );
 
       case "url":
         return (
@@ -176,7 +218,7 @@ export function RegisterAssetDialog() {
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
-        )
+        );
 
       case "email":
         return (
@@ -186,24 +228,42 @@ export function RegisterAssetDialog() {
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
-        )
+        );
 
       default:
-        return <Input type="text" placeholder="Value" value={value} onChange={(e) => onChange(e.target.value)} />
+        return (
+          <Input
+            type="text"
+            placeholder="Value"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
     }
-  }
+  };
 
   const onSubmit = (data: RegisterAssetForm) => {
     // Filter out empty properties
-    const filteredProperties = data.properties.filter((prop) => prop.key && prop.value)
+    const filteredProperties = data.properties.filter(
+      (prop) => prop.key && prop.value
+    );
     const finalData = {
       ...data,
       properties: filteredProperties,
-    }
-    console.log("Registering asset:", finalData)
+    };
+    console.log("Registering asset:", finalData);
     // Here you would typically make an API call to register the asset
-    setOpen(false)
-  }
+
+    const transaction = prepareContractCall({
+      contract,
+      method: "function createAsset(uint256 _id, string _name)",
+      params: [12, "Apple"],
+    });
+    sendTransaction(transaction);
+    console.log("Asset registered!", transaction);
+
+    setOpen(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -213,7 +273,9 @@ export function RegisterAssetDialog() {
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
           <DialogTitle>Register New Asset</DialogTitle>
-          <DialogDescription>Enter the asset details and add any additional properties needed.</DialogDescription>
+          <DialogDescription>
+            Enter the asset details and add any additional properties needed.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-4 py-4">
@@ -224,10 +286,16 @@ export function RegisterAssetDialog() {
               <Input
                 id="assetName"
                 className="col-span-3"
-                {...register("assetName", { required: "Asset name is required" })}
+                {...register("assetName", {
+                  required: "Asset name is required",
+                })}
               />
             </div>
-            {errors.assetName && <p className="text-sm text-red-500 text-right">{errors.assetName.message}</p>}
+            {errors.assetName && (
+              <p className="text-sm text-red-500 text-right">
+                {errors.assetName.message}
+              </p>
+            )}
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="assetId" className="text-right">
@@ -239,31 +307,46 @@ export function RegisterAssetDialog() {
                 {...register("assetId", { required: "Asset ID is required" })}
               />
             </div>
-            {errors.assetId && <p className="text-sm text-red-500 text-right">{errors.assetId.message}</p>}
+            {errors.assetId && (
+              <p className="text-sm text-red-500 text-right">
+                {errors.assetId.message}
+              </p>
+            )}
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Properties</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addProperty}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addProperty}
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Property
                 </Button>
               </div>
 
               {fields.map((field, index) => {
-                const property = watch(`properties.${index}`)
+                const property = watch(`properties.${index}`);
 
                 return (
-                  <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
+                  <div
+                    key={field.id}
+                    className="grid grid-cols-12 gap-2 items-start"
+                  >
                     <div className="col-span-3">
-                      <Input placeholder="Key" {...register(`properties.${index}.key`)} />
+                      <Input
+                        placeholder="Key"
+                        {...register(`properties.${index}.key`)}
+                      />
                     </div>
                     <div className="col-span-2">
                       <Select
                         value={property?.dataType || "text"}
                         onValueChange={(value: PropertyDataType) => {
-                          setValue(`properties.${index}.dataType`, value)
-                          setValue(`properties.${index}.value`, "")
+                          setValue(`properties.${index}.dataType`, value);
+                          setValue(`properties.${index}.value`, "");
                         }}
                       >
                         <SelectTrigger>
@@ -283,7 +366,9 @@ export function RegisterAssetDialog() {
                         index={index}
                         dataType={property?.dataType || "text"}
                         value={property?.value || ""}
-                        onChange={(value) => setValue(`properties.${index}.value`, value)}
+                        onChange={(value) =>
+                          setValue(`properties.${index}.value`, value)
+                        }
                       />
                     </div>
                     <Button
@@ -296,12 +381,16 @@ export function RegisterAssetDialog() {
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit">Register Asset</Button>
@@ -309,6 +398,5 @@ export function RegisterAssetDialog() {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

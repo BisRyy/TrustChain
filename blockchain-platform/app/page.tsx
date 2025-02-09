@@ -24,7 +24,7 @@ import { NotificationCenter } from "./notification-center";
 import { RecentTransactions } from "./recent-transactions";
 import { UserNav } from "./user-nav";
 import { RegisterAssetDialog } from "./register-asset-dialog";
-import { client } from "@/lib/client";
+import { chain, client } from "@/lib/client";
 import { ConnectButton } from "thirdweb/react";
 
 export default function DashboardPage() {
@@ -47,6 +47,7 @@ export default function DashboardPage() {
             <div className="flex justify-center">
               <ConnectButton
                 client={client}
+                chain={chain}
                 appMetadata={{
                   name: "Example App",
                   url: "https://example.com",
