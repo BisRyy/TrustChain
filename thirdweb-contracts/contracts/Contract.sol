@@ -1,10 +1,10 @@
-// SPDX-Lense-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@thirdweb-dev/contracts/extension/ContractMetadata.sol";
 
 contract AssetManager {
     address public deployer;
- 
+    
     constructor() {
         deployer = msg.sender;
     }
@@ -15,9 +15,22 @@ contract AssetManager {
         address owner;
     }
 
-    // All assets storage
+    struct AssetDetails {
+        uint256 id;
+        string name;
+        address owner;
+        string[] keys;
+        string[] values;
+    }
+
+    // Core assets storage
     Asset[] private assets;
     
+    // Dynamic properties storage
+    mapping(uint256 => mapping(string => string)) private assetProperties;
+    mapping(uint256 => string[]) private assetPropertyKeys;
+    mapping(uint256 => mapping(string => bool)) private assetKeyExists;
+
     // Ownership tracking
     mapping(address => uint256[]) private ownerAssets;
     mapping(address => mapping(uint256 => uint256)) private ownerAssetIndex;
@@ -27,20 +40,58 @@ contract AssetManager {
 
     event AssetCreated(uint256 indexed id, address indexed owner, string name);
     event AssetTransferred(uint256 indexed id, address indexed from, address indexed to);
+    event AssetPropertyUpdated(uint256 indexed id, string key, string value);
 
-    // Create new asset with unique ID
-    function createAsset(uint256 _id, string memory _name) external {
+    function createAsset(
+        uint256 _id,
+        string memory _name,
+        string[] memory _keys,
+        string[] memory _values
+    ) external {
         require(!assetExists[_id], "Asset ID already exists");
         require(bytes(_name).length > 0, "Name cannot be empty");
-        
+        require(_keys.length == _values.length, "Mismatched keys and values");
+
         assets.push(Asset(_id, _name, msg.sender));
         assetExists[_id] = true;
-        
-        // Add to owner's list
+
+        for (uint256 i = 0; i < _keys.length; i++) {
+            _setProperty(_id, _keys[i], _values[i]);
+        }
+
         ownerAssets[msg.sender].push(_id);
         ownerAssetIndex[msg.sender][_id] = ownerAssets[msg.sender].length - 1;
         
         emit AssetCreated(_id, msg.sender, _name);
+    }
+
+    function setAssetProperty(uint256 _id, string memory _key, string memory _value) external {
+        require(assetExists[_id], "Asset does not exist");
+        Asset storage asset = _getAssetById(_id);
+        require(asset.owner == msg.sender, "Not asset owner");
+        
+        _setProperty(_id, _key, _value);
+        emit AssetPropertyUpdated(_id, _key, _value);
+    }
+
+    function _setProperty(uint256 _id, string memory _key, string memory _value) private {
+        assetProperties[_id][_key] = _value;
+        if (!assetKeyExists[_id][_key]) {
+            assetPropertyKeys[_id].push(_key);
+            assetKeyExists[_id][_key] = true;
+        }
+    }
+
+    // Get property keys for an asset
+    function getAssetPropertyKeys(uint256 _id) external view returns (string[] memory) {
+        require(assetExists[_id], "Asset does not exist");
+        return assetPropertyKeys[_id];
+    }
+
+    // Get specific property value
+    function getAssetProperty(uint256 _id, string memory _key) external view returns (string memory) {
+        require(assetExists[_id], "Asset does not exist");
+        return assetProperties[_id][_key];
     }
 
     // Get all assets in the system
@@ -48,21 +99,62 @@ contract AssetManager {
         return assets;
     }
 
-    // Get assets owned by specific address
-    function getAssetsByOwner(address _owner) external view returns (uint256[] memory) {
-        return ownerAssets[_owner];
+    // Modified function to return all asset details for an owner
+    function getAssetsByOwner(address _owner) external view returns (AssetDetails[] memory) {
+        uint256[] memory assetIds = ownerAssets[_owner];
+        AssetDetails[] memory result = new AssetDetails[](assetIds.length);
+
+        for (uint256 i = 0; i < assetIds.length; i++) {
+            uint256 assetId = assetIds[i];
+            Asset memory asset = _getAssetById(assetId);
+
+            // Fetch custom properties
+            string[] memory keys = assetPropertyKeys[assetId];
+            string[] memory values = new string[](keys.length);
+
+            for (uint256 j = 0; j < keys.length; j++) {
+                values[j] = assetProperties[assetId][keys[j]];
+            }
+
+            // Populate the result
+            result[i] = AssetDetails({
+                id: asset.id,
+                name: asset.name,
+                owner: asset.owner,
+                keys: keys,
+                values: values
+            });
+        }
+
+        return result;
     }
 
+
     // Get detailed information about an asset
-    function getAssetDetails(uint256 _id) external view returns (Asset memory) {
+    // Get core asset details
+    function getAssetDetails(uint256 _id) external view returns (AssetDetails memory) {
         require(assetExists[_id], "Asset does not exist");
-        for (uint256 i = 0; i < assets.length; i++) {
-            if (assets[i].id == _id) {
-                return assets[i];
-            }
+
+        Asset memory asset = _getAssetById(_id);
+
+        // Fetch custom properties
+        string[] memory keys = assetPropertyKeys[_id];
+        string[] memory values = new string[](keys.length);
+
+        for (uint256 i = 0; i < keys.length; i++) {
+            values[i] = assetProperties[_id][keys[i]];
         }
-        revert("Asset not found");
+
+        // Return the full details
+        return AssetDetails({
+            id: asset.id,
+            name: asset.name,
+            owner: asset.owner,
+            keys: keys,
+            values: values
+        });
     }
+
 
     // Transfer asset ownership
     function transferAsset(uint256 _id, address _newOwner) external {

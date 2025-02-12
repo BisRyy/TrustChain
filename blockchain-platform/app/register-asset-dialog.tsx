@@ -1,6 +1,13 @@
 "use client";
 
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import {
+  CalendarIcon,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 
@@ -34,7 +41,13 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { contract } from "@/lib/client";
 import { prepareContractCall } from "thirdweb";
-import { useSendTransaction } from "thirdweb/react";
+import {
+  lightTheme,
+  TransactionButton,
+  useSendTransaction,
+} from "thirdweb/react";
+import { pinata } from "@/lib/config";
+import Image from "next/image";
 
 type PropertyDataType =
   | "text"
@@ -73,12 +86,19 @@ const DATA_TYPES: { label: string; value: PropertyDataType }[] = [
 
 export function RegisterAssetDialog() {
   const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<{
+    type: "success" | "error" | null;
+    message: string;
+  }>({ type: null, message: "" });
+  const [previewImage, setPreviewImage] = useState("/placeholder.svg");
   const { mutate: sendTransaction } = useSendTransaction();
+  const [isUploading, setIsUploading] = useState(false);
 
   const {
     register,
     control,
     handleSubmit,
+    getValues,
     setValue,
     watch,
     formState: { errors },
@@ -99,146 +119,31 @@ export function RegisterAssetDialog() {
     append({ key: "", value: "", dataType: "text" });
   };
 
-  const PropertyInput = ({
-    index,
-    dataType,
-    value,
-    onChange,
-  }: {
-    index: number;
-    dataType: PropertyDataType;
-    value: string;
-    onChange: (value: string) => void;
-  }) => {
-    const [date, setDate] = useState<Date | undefined>(
-      value ? new Date(value) : undefined
-    );
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      console.log("Uploading image to Pinata...");
+      const result = await pinata.upload.file(file);
+      console.log("Uploaded image to Pinata:", result);
+      setPreviewImage(`https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`);
 
-    switch (dataType) {
-      case "number":
-        return (
-          <Input
-            type="number"
-            placeholder="Value"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        );
-
-      case "date":
-        return (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(newDate) => {
-                  setDate(newDate);
-                  if (newDate) {
-                    onChange(newDate.toISOString());
-                  }
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        );
-
-      case "boolean":
-        return (
-          <Select value={value} onValueChange={onChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select value" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Yes</SelectItem>
-              <SelectItem value="false">No</SelectItem>
-            </SelectContent>
-          </Select>
-        );
-
-      case "longtext":
-        return (
-          <Textarea
-            placeholder="Value"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        );
-
-      case "file":
-        return (
-          <Input
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onChange(file.name);
-              }
-            }}
-          />
-        );
-
-      case "color":
-        return (
-          <div className="flex gap-2 items-center">
-            <Input
-              type="color"
-              className="w-12 h-8 p-1"
-              value={value || "#000000"}
-              onChange={(e) => onChange(e.target.value)}
-            />
-            <Input
-              type="text"
-              placeholder="#000000"
-              className="flex-1"
-              value={value || ""}
-              onChange={(e) => onChange(e.target.value)}
-            />
-          </div>
-        );
-
-      case "url":
-        return (
-          <Input
-            type="url"
-            placeholder="https://example.com"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        );
-
-      case "email":
-        return (
-          <Input
-            type="email"
-            placeholder="email@example.com"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        );
-
-      default:
-        return (
-          <Input
-            type="text"
-            placeholder="Value"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        );
+      // Add or update the image property
+      const imagePropertyIndex = fields.findIndex(
+        (field) => field.key === "image"
+      );
+      if (imagePropertyIndex >= 0) {
+        setValue(`properties.${imagePropertyIndex}.value`, result.IpfsHash);
+      } else {
+        append({ key: "image", value: result.IpfsHash, dataType: "file" });
+      }
+    } catch (error) {
+      console.error("Error uploading image to Pinata:", error);
+      setStatus({
+        type: "error",
+        message: "Failed to upload image",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -247,30 +152,51 @@ export function RegisterAssetDialog() {
     const filteredProperties = data.properties.filter(
       (prop) => prop.key && prop.value
     );
-    const finalData = {
-      ...data,
-      properties: filteredProperties,
-    };
-    console.log("Registering asset:", finalData);
-    // Here you would typically make an API call to register the asset
 
-    const transaction = prepareContractCall({
-      contract,
-      method: "function createAsset(uint256 _id, string _name)",
-      params: [12, "Apple"],
+    const keys = filteredProperties.map((prop) => prop.key);
+    const values = filteredProperties.map((prop) => prop.value);
+
+    console.log("Registering asset:", {
+      id: data.assetId,
+      name: data.assetName,
+      keys,
+      values,
     });
-    sendTransaction(transaction);
-    console.log("Asset registered!", transaction);
 
-    setOpen(false);
+    try {
+      const transaction = prepareContractCall({
+        contract,
+        method:
+          "function createAsset(uint256 _id, string _name, string[] _keys, string[] _values)",
+        params: [BigInt(data.assetId), data.assetName, keys, values],
+      });
+      const x = sendTransaction(transaction);
+      console.log("Asset registered!", transaction, x);
+    } catch (error) {
+      console.error("Error registering asset:", error);
+    }
+  };
+
+  const resetForm = () => {
+    setValue("assetName", "");
+    setValue("assetId", "");
+    setValue("properties", []);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          setStatus({ type: null, message: "" });
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button>Register New Asset</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Register New Asset</DialogTitle>
           <DialogDescription>
@@ -279,39 +205,94 @@ export function RegisterAssetDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="assetName" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="assetName"
-                className="col-span-3"
-                {...register("assetName", {
-                  required: "Asset name is required",
-                })}
-              />
-            </div>
-            {errors.assetName && (
-              <p className="text-sm text-red-500 text-right">
-                {errors.assetName.message}
-              </p>
-            )}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="imageUpload"
+                  disabled={isUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleImageUpload(file);
+                    }
+                  }}
+                />
+                <Label
+                  htmlFor="imageUpload"
+                  className={`cursor-pointer block ${
+                    isUploading ? "cursor-not-allowed" : ""
+                  }`}
+                >
+                  <Image
+                    src={previewImage}
+                    alt="Asset Image"
+                    className={`rounded-lg object-cover ${
+                      !isUploading && "hover:opacity-80"
+                    } transition-opacity`}
+                    width={200}
+                    height={100}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity text-white rounded-lg">
+                    {isUploading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Uploading...</span>
+                      </div>
+                    ) : (
+                      "Click to upload image"
+                    )}
+                  </div>
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Uploading...</span>
+                      </div>
+                    </div>
+                  )}
+                </Label>
+              </div>
+              <div className="space-y-4 w-full">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="assetName" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="assetName"
+                    className="col-span-3"
+                    {...register("assetName", {
+                      required: "Asset name is required",
+                    })}
+                  />
+                </div>
+                {errors.assetName && (
+                  <p className="text-sm text-red-500 text-right">
+                    {errors.assetName.message}
+                  </p>
+                )}
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="assetId" className="text-right">
-                ID
-              </Label>
-              <Input
-                id="assetId"
-                className="col-span-3"
-                {...register("assetId", { required: "Asset ID is required" })}
-              />
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="assetId" className="text-right">
+                    ID
+                  </Label>
+                  <Input
+                    id="assetId"
+                    className="col-span-3"
+                    {...register("assetId", {
+                      required: "Asset ID is required",
+                    })}
+                  />
+                </div>
+                {errors.assetId && (
+                  <p className="text-sm text-red-500 text-right">
+                    {errors.assetId.message}
+                  </p>
+                )}
+              </div>
             </div>
-            {errors.assetId && (
-              <p className="text-sm text-red-500 text-right">
-                {errors.assetId.message}
-              </p>
-            )}
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -329,6 +310,140 @@ export function RegisterAssetDialog() {
 
               {fields.map((field, index) => {
                 const property = watch(`properties.${index}`);
+                let inputElement;
+
+                if (property.dataType === "number") {
+                  inputElement = (
+                    <Input
+                      type="number"
+                      placeholder="Value"
+                      {...register(`properties.${index}.value`)}
+                    />
+                  );
+                } else if (property.dataType === "date") {
+                  const dateValue = property.value
+                    ? new Date(property.value)
+                    : undefined;
+                  inputElement = (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !dateValue && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateValue ? (
+                            format(dateValue, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={dateValue}
+                          onSelect={(newDate) => {
+                            if (newDate) {
+                              setValue(
+                                `properties.${index}.value`,
+                                newDate.toISOString()
+                              );
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  );
+                } else if (property.dataType === "boolean") {
+                  inputElement = (
+                    <Select
+                      value={property.value}
+                      onValueChange={(val) =>
+                        setValue(`properties.${index}.value`, val)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select value" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Yes</SelectItem>
+                        <SelectItem value="false">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  );
+                } else if (property.dataType === "longtext") {
+                  inputElement = (
+                    <Textarea
+                      placeholder="Value"
+                      {...register(`properties.${index}.value`)}
+                    />
+                  );
+                } else if (property.dataType === "file") {
+                  inputElement = (
+                    <Input
+                      type="file"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const result = await pinata.upload.file(file);
+                            setValue(
+                              `properties.${index}.value`,
+                              result.IpfsHash
+                            );
+                          } catch (error) {
+                            console.error("Error uploading to Pinata:", error);
+                          }
+                        }
+                      }}
+                    />
+                  );
+                } else if (property.dataType === "color") {
+                  inputElement = (
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="color"
+                        className="w-12 h-8 p-1"
+                        {...register(`properties.${index}.value`)}
+                      />
+                      <Input
+                        type="text"
+                        placeholder="#000000"
+                        className="flex-1"
+                        {...register(`properties.${index}.value`)}
+                      />
+                    </div>
+                  );
+                } else if (property.dataType === "url") {
+                  inputElement = (
+                    <Input
+                      type="url"
+                      placeholder="https://example.com"
+                      {...register(`properties.${index}.value`)}
+                    />
+                  );
+                } else if (property.dataType === "email") {
+                  inputElement = (
+                    <Input
+                      type="email"
+                      placeholder="email@example.com"
+                      {...register(`properties.${index}.value`)}
+                    />
+                  );
+                } else {
+                  inputElement = (
+                    <Input
+                      type="text"
+                      placeholder="Value"
+                      {...register(`properties.${index}.value`)}
+                    />
+                  );
+                }
 
                 return (
                   <div
@@ -343,7 +458,7 @@ export function RegisterAssetDialog() {
                     </div>
                     <div className="col-span-2">
                       <Select
-                        value={property?.dataType || "text"}
+                        value={property.dataType}
                         onValueChange={(value: PropertyDataType) => {
                           setValue(`properties.${index}.dataType`, value);
                           setValue(`properties.${index}.value`, "");
@@ -361,16 +476,7 @@ export function RegisterAssetDialog() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-6">
-                      <PropertyInput
-                        index={index}
-                        dataType={property?.dataType || "text"}
-                        value={property?.value || ""}
-                        onChange={(value) =>
-                          setValue(`properties.${index}.value`, value)
-                        }
-                      />
-                    </div>
+                    <div className="col-span-6">{inputElement}</div>
                     <Button
                       type="button"
                       variant="ghost"
@@ -384,6 +490,23 @@ export function RegisterAssetDialog() {
                 );
               })}
             </div>
+
+            {status.type && (
+              <div
+                className={`flex items-center gap-2 p-3 rounded-md ${
+                  status.type === "success"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {status.type === "success" ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5" />
+                )}
+                <span>{status.message}</span>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -393,7 +516,56 @@ export function RegisterAssetDialog() {
             >
               Cancel
             </Button>
-            <Button type="submit">Register Asset</Button>
+            <TransactionButton
+              transaction={() => {
+                setStatus({ type: null, message: "" });
+                const values = getValues();
+                if (!values.assetName) {
+                  throw new Error("Asset name is required");
+                }
+                if (!values.assetId) {
+                  throw new Error("Asset ID is required");
+                }
+
+                const filteredProperties = values.properties.filter(
+                  (prop) => prop.key && prop.value
+                );
+                const keys = filteredProperties.map((prop) => prop.key);
+                const propValues = filteredProperties.map((prop) => prop.value);
+
+                return prepareContractCall({
+                  contract,
+                  method:
+                    "function createAsset(uint256 _id, string _name, string[] _keys, string[] _values)",
+                  params: [
+                    BigInt(values.assetId),
+                    values.assetName,
+                    keys,
+                    propValues,
+                  ],
+                });
+              }}
+              onTransactionConfirmed={async () => {
+                setStatus({
+                  type: "success",
+                  message: "Asset registered successfully!",
+                });
+                setTimeout(() => {
+                  setOpen(false);
+                  setStatus({ type: null, message: "" });
+                  resetForm();
+                }, 2000);
+              }}
+              onError={(error) => {
+                setStatus({
+                  type: "error",
+                  message: error.message,
+                });
+              }}
+              theme={lightTheme()}
+            >
+              Register Asset
+            </TransactionButton>
           </DialogFooter>
         </form>
       </DialogContent>
