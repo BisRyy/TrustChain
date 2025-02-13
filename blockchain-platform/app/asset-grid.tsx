@@ -13,31 +13,28 @@ import {
 } from "@/components/ui/card";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { contract } from "@/lib/client";
+import { readContract } from "thirdweb";
+import { formatAddress } from "@/lib/utils";
 
 export function AssetGrid() {
-  // const { account } = useActiveAccount();
-  // Get all assets deployed
-  const {
-    data: assets,
-    isLoading: isLoadingAssets,
-    refetch: refetchAssets,
-  } = useReadContract({
-    contract: contract,
+  const account = useActiveAccount();
+
+  const { data: assets, isPending: isLoadingAssets } = useReadContract({
+    contract,
     method:
-      "function getAllAssets() view returns ((uint256 id, string name, address owner)[])",
-    params: [],
+      "function getAssetsByOwner(address _owner) view returns ((uint256 id, string name, address owner, string[] keys, string[] values)[])",
+    params: [account?.address || ""],
   });
 
-  // const {
-  //   data: assets,
-  //   isLoading: isLoadingAssets,
-  //   refetch: refetchAssets,
-  // } = useReadContract({
-  //   contract: contract,
-  //   method:
-  //     "function getAssetsByOwner(address _owner) view returns (uint256[])",
-  //   params: [account?.address || "0x"],
-  // });
+  if (isLoadingAssets) {
+    return <p>Loading assets...</p>;
+  }
+
+  if (!assets) {
+    return <p>No assets found</p>;
+  }
+  console.log(assets, "assets");
+
   return (
     <div className="grid gap-4 md:grid-cols-3 grid-cols-2 lg:grid-cols-4">
       {assets ? (
@@ -55,7 +52,11 @@ export function AssetGrid() {
             <CardContent>
               <div className="aspect-square relative mb-4">
                 <Image
-                  src="/placeholder.svg"
+                  src={
+                    `https://ipfs.io/ipfs/${
+                      asset.values[asset.keys.indexOf("image")]
+                    }` || "/placeholder.png"
+                  }
                   alt={asset.name}
                   className="rounded-lg object-cover"
                   fill
@@ -69,7 +70,7 @@ export function AssetGrid() {
 
                 <div className="flex justify-between">
                   <span className="text-sm font-medium">Owner:</span>
-                  <span className="text-sm"> {asset.owner}</span>
+                  <span className="text-sm"> {formatAddress(asset.owner)}</span>
                 </div>
                 {/*  <div className="flex justify-between">
                   <span className="text-sm font-medium">Type:</span>

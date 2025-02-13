@@ -1,14 +1,33 @@
-import { ArrowUpRight, CheckCircle2, Clock, XCircle } from "lucide-react"
-import Link from "next/link"
+"use client";
+import { contract } from "@/lib/client";
+import { ArrowUpRight, CheckCircle2, Clock, XCircle } from "lucide-react";
+import Link from "next/link";
+import { prepareEvent } from "thirdweb";
+import { useContractEvents } from "thirdweb/react";
 
 export function RecentTransactions() {
+  const preparedEvent = prepareEvent({
+    signature:
+      "event AssetActivity(uint256 indexed assetId, address indexed actor, string transactionType, string data)",
+  });
+
+  const { data: event } = useContractEvents({
+    contract: contract,
+    events: [preparedEvent],
+  });
+
+  if (!event || event.length < 1) {
+    return <p>No recent transactions</p>;
+  }
+
   const transactions = [
     {
-      id: "tx1",
-      type: "Transfer",
-      asset: "Asset #0001",
-      from: "Manufacturer Inc",
-      to: "Distributor LLC",
+      id: event[0].address,
+      transaction: event[0].transactionHash,
+      type: event[0].args.transactionType,
+      asset: `Asset #${event[0].args.assetId.toString()}`,
+      from: event[0].args.actor,
+      to: event[0].args.data,
       status: "Completed",
       timestamp: "10 minutes ago",
     },
@@ -30,7 +49,7 @@ export function RecentTransactions() {
       status: "Failed",
       timestamp: "1 hour ago",
     },
-  ]
+  ];
 
   return (
     <div className="space-y-8">
@@ -44,21 +63,34 @@ export function RecentTransactions() {
             ${tx.status === "Failed" ? "bg-red-100" : ""}
           `}
           >
-            {tx.status === "Completed" && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-            {tx.status === "Pending" && <Clock className="h-4 w-4 text-yellow-600" />}
-            {tx.status === "Failed" && <XCircle className="h-4 w-4 text-red-600" />}
+            {tx.status === "Completed" && (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            )}
+            {tx.status === "Pending" && (
+              <Clock className="h-4 w-4 text-yellow-600" />
+            )}
+            {tx.status === "Failed" && (
+              <XCircle className="h-4 w-4 text-red-600" />
+            )}
           </div>
           <div className="ml-4 space-y-1">
             <p className="text-sm font-medium leading-none">
               {tx.type} - {tx.asset}
             </p>
-            <p className="text-sm text-muted-foreground">
-              From: {tx.from} {tx.to !== "N/A" && `→ To: ${tx.to}`}
-            </p>
+            {tx.type === "Transfer" && (
+              <p className="text-sm text-muted-foreground">
+                From: {tx.from} {tx.to !== "N/A" && `→ To: ${tx.to}`}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">{tx.timestamp}</p>
           </div>
           <div className="ml-auto">
-            <Link href={`/transaction/${tx.id}`} className="flex items-center text-blue-600">
+            <Link
+              href={`https://sepolia.etherscan.io/tx/${tx.transaction}`}
+              className="flex items-center text-blue-600"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
               View
               <ArrowUpRight className="ml-1 h-4 w-4" />
             </Link>
@@ -66,6 +98,5 @@ export function RecentTransactions() {
         </div>
       ))}
     </div>
-  )
+  );
 }
-

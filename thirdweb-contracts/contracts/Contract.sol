@@ -9,12 +9,6 @@ contract AssetManager {
         deployer = msg.sender;
     }
 
-    struct Asset {
-        uint256 id;
-        string name;
-        address owner;
-    }
-
     struct AssetDetails {
         uint256 id;
         string name;
@@ -24,7 +18,7 @@ contract AssetManager {
     }
 
     // Core assets storage
-    Asset[] private assets;
+    AssetDetails[] private assets;
     
     // Dynamic properties storage
     mapping(uint256 => mapping(string => string)) private assetProperties;
@@ -38,6 +32,14 @@ contract AssetManager {
     // Asset existence tracking
     mapping(uint256 => bool) private assetExists;
 
+    // Enhanced event for activity tracking
+    event AssetActivity(
+        uint256 indexed assetId,
+        address indexed actor,
+        string transactionType, // "CREATE", "TRANSFER", "PROPERTY_UPDATE"
+        string data
+    );
+    
     event AssetCreated(uint256 indexed id, address indexed owner, string name);
     event AssetTransferred(uint256 indexed id, address indexed from, address indexed to);
     event AssetPropertyUpdated(uint256 indexed id, string key, string value);
@@ -52,7 +54,7 @@ contract AssetManager {
         require(bytes(_name).length > 0, "Name cannot be empty");
         require(_keys.length == _values.length, "Mismatched keys and values");
 
-        assets.push(Asset(_id, _name, msg.sender));
+        assets.push(AssetDetails(_id, _name, msg.sender, _keys, _values));
         assetExists[_id] = true;
 
         for (uint256 i = 0; i < _keys.length; i++) {
@@ -62,15 +64,19 @@ contract AssetManager {
         ownerAssets[msg.sender].push(_id);
         ownerAssetIndex[msg.sender][_id] = ownerAssets[msg.sender].length - 1;
         
+        // Emit enhanced event
+        emit AssetActivity(_id, msg.sender, "CREATE", _name);
         emit AssetCreated(_id, msg.sender, _name);
     }
 
     function setAssetProperty(uint256 _id, string memory _key, string memory _value) external {
         require(assetExists[_id], "Asset does not exist");
-        Asset storage asset = _getAssetById(_id);
+        AssetDetails storage asset = _getAssetById(_id);
         require(asset.owner == msg.sender, "Not asset owner");
         
         _setProperty(_id, _key, _value);
+        // Emit enhanced event
+        emit AssetActivity(_id, msg.sender, "PROPERTY_UPDATE", string(abi.encodePacked(_key, ":", _value)));
         emit AssetPropertyUpdated(_id, _key, _value);
     }
 
@@ -95,7 +101,7 @@ contract AssetManager {
     }
 
     // Get all assets in the system
-    function getAllAssets() external view returns (Asset[] memory) {
+    function getAllAssets() external view returns (AssetDetails[] memory) {
         return assets;
     }
 
@@ -106,7 +112,7 @@ contract AssetManager {
 
         for (uint256 i = 0; i < assetIds.length; i++) {
             uint256 assetId = assetIds[i];
-            Asset memory asset = _getAssetById(assetId);
+            AssetDetails memory asset = _getAssetById(assetId);
 
             // Fetch custom properties
             string[] memory keys = assetPropertyKeys[assetId];
@@ -135,7 +141,7 @@ contract AssetManager {
     function getAssetDetails(uint256 _id) external view returns (AssetDetails memory) {
         require(assetExists[_id], "Asset does not exist");
 
-        Asset memory asset = _getAssetById(_id);
+        AssetDetails memory asset = _getAssetById(_id);
 
         // Fetch custom properties
         string[] memory keys = assetPropertyKeys[_id];
@@ -155,13 +161,28 @@ contract AssetManager {
         });
     }
 
+    function addressToString(address _addr) internal pure returns (string memory) {
+        bytes memory data = abi.encodePacked(_addr);
+        bytes memory alphabet = "0123456789abcdef";
+        
+        bytes memory str = new bytes(42); // 0x + 40 characters
+        str[0] = '0';
+        str[1] = 'x';
+        for (uint256 i = 0; i < 20; i++) {
+            str[2+i*2] = alphabet[uint8(data[i] >> 4)];
+            str[3+i*2] = alphabet[uint8(data[i] & 0x0f)];
+        }
+        return string(str);
+    }
+
+
 
     // Transfer asset ownership
     function transferAsset(uint256 _id, address _newOwner) external {
         require(assetExists[_id], "Asset does not exist");
         require(_newOwner != address(0), "Invalid new owner");
         
-        Asset storage asset = _getAssetById(_id);
+        AssetDetails storage asset = _getAssetById(_id);
         require(asset.owner == msg.sender, "Not asset owner");
         
         // Remove from current owner's list
@@ -174,11 +195,13 @@ contract AssetManager {
         ownerAssets[_newOwner].push(_id);
         ownerAssetIndex[_newOwner][_id] = ownerAssets[_newOwner].length - 1;
         
+        // Emit enhanced event
+        emit AssetActivity(_id, msg.sender, "TRANSFER", addressToString(_newOwner));
         emit AssetTransferred(_id, msg.sender, _newOwner);
     }
 
     // Helper function to find asset by ID
-    function _getAssetById(uint256 _id) private view returns (Asset storage) {
+    function _getAssetById(uint256 _id) private view returns (AssetDetails storage) {
         for (uint256 i = 0; i < assets.length; i++) {
             if (assets[i].id == _id) {
                 return assets[i];

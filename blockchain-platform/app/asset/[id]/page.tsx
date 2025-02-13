@@ -34,6 +34,7 @@ import { UpdatePropertyDialog } from "./update-property-dialog";
 import { TransferAssetDialog } from "./transfer-asset-dialog";
 import { contract } from "@/lib/client";
 import { useReadContract } from "thirdweb/react";
+import { formatAddress } from "@/lib/utils";
 
 // This would come from your API/database
 const assetData = {
@@ -95,7 +96,7 @@ export default function AssetDetailsPage({
   const { data: asset, isPending } = useReadContract({
     contract,
     method:
-      "function getAssetDetails(uint256 _id) view returns ((uint256 id, string name, address owner))",
+      "function getAssetDetails(uint256 _id) view returns ((uint256 id, string name, address owner, string[] keys, string[] values))",
     params: [BigInt(params.id)],
   });
 
@@ -112,7 +113,7 @@ export default function AssetDetailsPage({
               <ArrowLeft className="h-4 w-4" />
             </Link>
             <h1 className="text-3xl font-bold tracking-tight">
-              Asset #{asset.id}
+              Asset #{params.id}
             </h1>
             <Badge variant="outline" className="ml-2">
               {assetData.status}
@@ -122,8 +123,8 @@ export default function AssetDetailsPage({
             <Button variant="outline" size="icon">
               <QrCode className="h-4 w-4" />
             </Button>
-            <TransferAssetDialog />
-            <UpdatePropertyDialog />
+            <TransferAssetDialog id={params.id} />
+            <UpdatePropertyDialog id={params.id} />
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
@@ -143,7 +144,11 @@ export default function AssetDetailsPage({
           <CardContent>
             <div className="aspect-square relative mb-6">
               <Image
-                src="/placeholder.svg"
+                src={
+                  `https://ipfs.io/ipfs/${
+                    asset.values[asset.keys.indexOf("image")]
+                  }` || "/placeholder.png"
+                }
                 alt={asset.name}
                 className="rounded-lg object-cover"
                 fill
@@ -164,7 +169,7 @@ export default function AssetDetailsPage({
                 <div>
                   <p className="text-sm font-medium">Current Owner</p>
                   <p className="text-sm text-muted-foreground">
-                    {assetData.owner}
+                    {formatAddress(asset.owner)}
                   </p>
                 </div>
                 <div>

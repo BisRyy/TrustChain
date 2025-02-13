@@ -93,6 +93,7 @@ export function RegisterAssetDialog() {
   const [previewImage, setPreviewImage] = useState("/placeholder.svg");
   const { mutate: sendTransaction } = useSendTransaction();
   const [isUploading, setIsUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const {
     register,
@@ -120,6 +121,7 @@ export function RegisterAssetDialog() {
   };
 
   const handleImageUpload = async (file: File) => {
+    setImageError(null);
     setIsUploading(true);
     try {
       console.log("Uploading image to Pinata...");
@@ -147,7 +149,22 @@ export function RegisterAssetDialog() {
     }
   };
 
+  const validateForm = (data: RegisterAssetForm) => {
+    // Check if image is uploaded
+    const imageProperty = data.properties.find((prop) => prop.key === "image");
+    if (!imageProperty?.value) {
+      setImageError("Image is required");
+      return false;
+    }
+    setImageError(null);
+    return true;
+  };
+
   const onSubmit = (data: RegisterAssetForm) => {
+    if (!validateForm(data)) {
+      return;
+    }
+
     // Filter out empty properties
     const filteredProperties = data.properties.filter(
       (prop) => prop.key && prop.value
@@ -231,7 +248,9 @@ export function RegisterAssetDialog() {
                     alt="Asset Image"
                     className={`rounded-lg object-cover ${
                       !isUploading && "hover:opacity-80"
-                    } transition-opacity`}
+                    } transition-opacity ${
+                      imageError ? "border-2 border-red-500" : ""
+                    }`}
                     width={200}
                     height={100}
                   />
@@ -254,6 +273,9 @@ export function RegisterAssetDialog() {
                     </div>
                   )}
                 </Label>
+                {imageError && (
+                  <p className="text-sm text-red-500 mt-1">{imageError}</p>
+                )}
               </div>
               <div className="space-y-4 w-full">
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -518,8 +540,10 @@ export function RegisterAssetDialog() {
             </Button>
             <TransactionButton
               transaction={() => {
-                setStatus({ type: null, message: "" });
                 const values = getValues();
+                if (!validateForm(values)) {
+                  throw new Error("Please upload an image");
+                }
                 if (!values.assetName) {
                   throw new Error("Asset name is required");
                 }
@@ -554,6 +578,8 @@ export function RegisterAssetDialog() {
                   setOpen(false);
                   setStatus({ type: null, message: "" });
                   resetForm();
+                  setPreviewImage("/placeholder.svg");
+                  setImageError(null);
                 }, 2000);
               }}
               onError={(error) => {
