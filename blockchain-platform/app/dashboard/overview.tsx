@@ -7,12 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Box,
-  ArrowUpRight,
-  BarChart3,
-  CircleDollarSign,
-} from "lucide-react";
+import { Box, ArrowUpRight, BarChart3, CircleDollarSign } from "lucide-react";
 import React from "react";
 import { RecentTransactions } from "../recent-transactions";
 import { useContractEvents } from "thirdweb/react";

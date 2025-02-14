@@ -28,6 +28,7 @@ import { chain, client } from "@/lib/client";
 import { ConnectButton } from "thirdweb/react";
 import AccountPage from "./account";
 import Overview from "./overview";
+import { VerifyDialog } from "./verify-dialog";
 
 export default function DashboardPage() {
   return (
@@ -63,16 +64,13 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <div className="flex items-center space-x-2">
-            <Button>
+            {/* <Button>
               <Link href="/transfer" className="flex">
                 <QrCode className="mr-2 h-4 w-4" />
                 Transfer
               </Link>
-            </Button>
-            <Button>
-              <QrCode className="mr-2 h-4 w-4" />
-              Verify
-            </Button>
+            </Button> */}
+            <VerifyDialog />
             <RegisterAssetDialog />
           </div>
         </div>
