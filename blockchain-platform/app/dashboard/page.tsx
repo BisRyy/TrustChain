@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   QrCode,
   Search,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -19,14 +20,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AssetGrid } from "../asset-grid";
-import { MainNav } from "../main-nav";
 import { NotificationCenter } from "../notification-center";
 import { RecentTransactions } from "../recent-transactions";
 import { UserNav } from "../user-nav";
 import { RegisterAssetDialog } from "../register-asset-dialog";
 import { chain, client } from "@/lib/client";
 import { ConnectButton } from "thirdweb/react";
-import AccountPage from "./account";
 import Overview from "./overview";
 import { VerifyDialog } from "./verify-dialog";
 
@@ -35,7 +34,10 @@ export default function DashboardPage() {
     <div className="flex min-h-screen flex-col">
       <div className="border-b">
         <div className="flex h-16 items-center px-4">
-          <MainNav className="mx-6" />
+          <Link className="flex items-center justify-center" href="/">
+            <Shield className="h-6 w-6" />
+            <span className="ml-2 text-xl font-bold">TrustChain</span>
+          </Link>
           <div className="ml-auto flex items-center space-x-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -52,8 +54,8 @@ export default function DashboardPage() {
                 client={client}
                 chain={chain}
                 appMetadata={{
-                  name: "Example App",
-                  url: "https://example.com",
+                  name: "TrustChain",
+                  url: "https://trustchain.bisry.me",
                 }}
               />
             </div>

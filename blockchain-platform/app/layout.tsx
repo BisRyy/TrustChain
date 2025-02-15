@@ -3,7 +3,7 @@ import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
 
 export const metadata: Metadata = {
-  title: "v0 App",
+  title: "Trust Chain",
   description: "Created with v0",
 };
 

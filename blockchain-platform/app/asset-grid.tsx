@@ -15,8 +15,12 @@ import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { contract } from "@/lib/client";
 import { readContract } from "thirdweb";
 import { formatAddress } from "@/lib/utils";
+import { QrCodeDialog } from "@/components/qr-code-dialog";
+import { useState } from "react";
 
 export function AssetGrid() {
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<string>("");
   const account = useActiveAccount();
 
   const { data: assets, isPending: isLoadingAssets } = useReadContract({
@@ -43,7 +47,14 @@ export function AssetGrid() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Asset #{asset.id}</span>
-                <Button variant="outline" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setSelectedAssetId(asset.id.toString());
+                    setQrDialogOpen(true);
+                  }}
+                >
                   <QrCode className="h-4 w-4" />
                   <span className="sr-only">View QR Code</span>
                 </Button>
@@ -105,6 +116,12 @@ export function AssetGrid() {
       ) : (
         <p>Loading assets...</p>
       )}
+      <QrCodeDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        assetId={selectedAssetId}
+        assetName="Bisrat"
+      />
     </div>
   );
 }
