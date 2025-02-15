@@ -19,6 +19,7 @@ interface VerificationResultProps {
     asset?: {
       id: string;
       name: string;
+      image: string;
       type: string;
       status: string;
       manufacturer: string;
@@ -72,7 +73,7 @@ export function VerificationResult({ result }: VerificationResultProps) {
         <CardContent className="space-y-6">
           <div className="aspect-video relative">
             <Image
-              src="/placeholder.svg"
+              src={result.asset.image}
               alt={result.asset.name}
               className="rounded-lg object-cover"
               fill

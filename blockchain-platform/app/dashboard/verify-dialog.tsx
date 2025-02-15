@@ -19,6 +19,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QrScanner } from "./qr-scanner";
 import { VerificationResult } from "./verification-result";
 import Html5QrcodePlugin from "../scan/Html5QrcodePlugin";
+import { useReadContract } from "thirdweb/react";
+import { contract } from "@/lib/client";
+import { readContract } from "thirdweb";
 
 export function VerifyDialog() {
   const [open, setOpen] = useState(false);
@@ -30,15 +33,24 @@ export function VerifyDialog() {
   async function handleVerify(id: string) {
     try {
       setIsVerifying(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const asset = await readContract({
+        contract,
+        method:
+          "function getAssetDetails(uint256 _id) view returns ((uint256 id, string name, address owner, string[] keys, string[] values))",
+        params: [BigInt(id)],
+      });
 
       // Mock verification result
       setVerificationResult({
-        isAuthentic: true,
+        isAuthentic: asset,
         asset: {
           id: id,
-          name: "Product A",
+          name: asset.name,
+          image:
+            `https://ipfs.io/ipfs/${
+              asset.values[asset.keys.indexOf("image")]
+            }` || "/placeholder.png",
           type: "Electronics",
           status: "Active",
           manufacturer: "Electronics Corp",

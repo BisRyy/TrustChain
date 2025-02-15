@@ -1,22 +1,45 @@
-"use client"
+"use client";
 
-import { DollarSign, Package, ShieldX, TrendingDown } from "lucide-react"
-import { useEffect, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DollarSign, Package, ShieldX, TrendingDown } from "lucide-react";
+import { useEffect, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 // Import Chart.js
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from "chart.js"
-import { Bar, Doughnut } from "react-chartjs-2"
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
 
 // Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 export function ImpactSection() {
   const countUpRefs = {
     losses: useRef(null),
     jobs: useRef(null),
     health: useRef(null),
-  }
+  };
 
   useEffect(() => {
     // Animate numbers on scroll
@@ -24,39 +47,47 @@ export function ImpactSection() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const target = entry.target as HTMLElement
-            const value = Number.parseInt(target.getAttribute("data-value") || "0")
-            let current = 0
-            const increment = value / 50
+            const target = entry.target as HTMLElement;
+            const value = Number.parseInt(
+              target.getAttribute("data-value") || "0"
+            );
+            let current = 0;
+            const increment = value / 50;
             const timer = setInterval(() => {
-              current += increment
+              current += increment;
               if (current >= value) {
-                target.textContent = value.toLocaleString()
-                clearInterval(timer)
+                target.textContent = value.toLocaleString();
+                clearInterval(timer);
               } else {
-                target.textContent = Math.round(current).toLocaleString()
+                target.textContent = Math.round(current).toLocaleString();
               }
-            }, 20)
+            }, 20);
           }
-        })
+        });
       },
-      { threshold: 0.1 },
-    )
+      { threshold: 0.1 }
+    );
 
     Object.values(countUpRefs).forEach((ref) => {
       if (ref.current) {
-        observer.observe(ref.current)
+        observer.observe(ref.current);
       }
-    })
+    });
 
     return () => {
-      observer.disconnect()
-    }
-  }, []) // Removed countUpRefs from dependencies
+      observer.disconnect();
+    };
+  }, []); // Removed countUpRefs from dependencies
 
   // Chart data
   const economicImpactData = {
-    labels: ["Electronics", "Pharmaceuticals", "Luxury Goods", "Automotive", "Food & Beverage"],
+    labels: [
+      "Electronics",
+      "Pharmaceuticals",
+      "Luxury Goods",
+      "Automotive",
+      "Food & Beverage",
+    ],
     datasets: [
       {
         label: "Annual Losses (Billion USD)",
@@ -66,7 +97,7 @@ export function ImpactSection() {
         borderWidth: 1,
       },
     ],
-  }
+  };
 
   const counterfeitDistributionData = {
     labels: ["Authentic Products", "Counterfeit Products"],
@@ -78,7 +109,7 @@ export function ImpactSection() {
         borderWidth: 1,
       },
     ],
-  }
+  };
 
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-destructive/5  md:pl-16">
@@ -106,10 +137,10 @@ export function ImpactSection() {
             <CardContent>
               <div className="text-2xl font-bold">
                 $
-                <span ref={countUpRefs.losses} data-value="570">
+                <span ref={countUpRefs.losses} data-value="500">
                   0
                 </span>
-                B
+                B+
               </div>
               <p className="text-xs text-muted-foreground">
                 Lost revenue due to counterfeit goods
@@ -141,7 +172,7 @@ export function ImpactSection() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                <span ref={countUpRefs.health} data-value="125000">
+                <span ref={countUpRefs.health} data-value="1500000">
                   0
                 </span>
               </div>
@@ -158,7 +189,7 @@ export function ImpactSection() {
               <Package className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">35%</div>
+              <div className="text-2xl font-bold">47%</div>
               <p className="text-xs text-muted-foreground">
                 Of global trade is counterfeit
               </p>
@@ -233,4 +264,3 @@ export function ImpactSection() {
     </section>
   );
 }
-

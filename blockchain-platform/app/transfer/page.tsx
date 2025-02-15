@@ -30,7 +30,7 @@ export default function TransferPage() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-muted-foreground hover:text-primary">
+          <Link href="/dashboard" className="text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">Transfer Asset</h1>
