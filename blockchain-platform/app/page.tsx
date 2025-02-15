@@ -19,7 +19,7 @@ export default function LandingPage() {
         <WhyBlockchain />
         <Features />
         <HowItWorks />
-        <Stats />
+        {/* <Stats /> */}
         <Benefits />
         <CTA />
       </main>
