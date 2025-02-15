@@ -46,7 +46,7 @@ export function AssetGrid() {
           <Card key={asset.id}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Asset #{asset.id}</span>
+                <span>Asset #{asset.id.toString()}</span>
                 <Button
                   variant="outline"
                   size="icon"

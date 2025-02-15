@@ -1,13 +1,19 @@
-import { ArrowLeft, ArrowUpRight, Copy, ExternalLink } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
+import { ArrowLeft, ArrowUpRight, Copy, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { VerificationStatus } from "./verification-status"
-import { TransactionTimeline } from "./transaction-timeline"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { VerificationStatus } from "./verification-status";
+import { TransactionTimeline } from "./transaction-timeline";
 
 // This would come from your API/database
 const transactionData = {
@@ -62,25 +68,34 @@ const transactionData = {
       description: "Asset ownership successfully transferred",
     },
   ],
-}
+};
 
-export default function TransactionDetailsPage({ params }: { params: { id: string } }) {
+export default function TransactionDetailsPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-muted-foreground hover:text-primary">
+            <Link
+              href="/dashboard"
+              className="text-muted-foreground hover:text-primary"
+            >
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <h1 className="text-3xl font-bold tracking-tight">Transaction Details</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Transaction Details
+            </h1>
             <Badge
               variant={
                 transactionData.status === "Completed"
-                  ? "success"
+                  ? "default"
                   : transactionData.status === "Pending"
-                    ? "warning"
-                    : "destructive"
+                  ? "outline"
+                  : "destructive"
               }
             >
               {transactionData.status}
@@ -98,7 +113,8 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Transaction Hash: {transactionData.hash} • Block #{transactionData.blockNumber}
+          Transaction Hash: {transactionData.hash} • Block #
+          {transactionData.blockNumber}
         </p>
       </div>
 
@@ -107,7 +123,9 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
           <Card>
             <CardHeader>
               <CardTitle>Transaction Information</CardTitle>
-              <CardDescription>Details about this blockchain transaction</CardDescription>
+              <CardDescription>
+                Details about this blockchain transaction
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
@@ -115,7 +133,9 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
                   <p className="text-sm text-muted-foreground">From</p>
                   <div className="space-y-1">
                     <p className="font-medium">{transactionData.from.name}</p>
-                    <p className="text-sm font-mono">{transactionData.from.address}</p>
+                    <p className="text-sm font-mono">
+                      {transactionData.from.address}
+                    </p>
                     <Badge variant="outline">{transactionData.from.role}</Badge>
                   </div>
                 </div>
@@ -123,7 +143,9 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
                   <p className="text-sm text-muted-foreground">To</p>
                   <div className="space-y-1">
                     <p className="font-medium">{transactionData.to.name}</p>
-                    <p className="text-sm font-mono">{transactionData.to.address}</p>
+                    <p className="text-sm font-mono">
+                      {transactionData.to.address}
+                    </p>
                     <Badge variant="outline">{transactionData.to.role}</Badge>
                   </div>
                 </div>
@@ -134,12 +156,14 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
               <div>
                 <p className="text-sm font-medium mb-2">Transaction Details</p>
                 <div className="grid gap-2">
-                  {Object.entries(transactionData.details).map(([key, value]) => (
-                    <div key={key} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{key}</span>
-                      <span className="font-mono">{value}</span>
-                    </div>
-                  ))}
+                  {Object.entries(transactionData.details).map(
+                    ([key, value]) => (
+                      <div key={key} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{key}</span>
+                        <span className="font-mono">{value}</span>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -152,10 +176,15 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
           <Card>
             <CardHeader>
               <CardTitle>Verification Status</CardTitle>
-              <CardDescription>Current verification and confirmation status</CardDescription>
+              <CardDescription>
+                Current verification and confirmation status
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <VerificationStatus status={transactionData.status} confirmations={transactionData.confirmations} />
+              <VerificationStatus
+                status={transactionData.status}
+                confirmations={transactionData.confirmations}
+              />
             </CardContent>
           </Card>
         </div>
@@ -164,7 +193,9 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
           <Card>
             <CardHeader>
               <CardTitle>Related Asset</CardTitle>
-              <CardDescription>Asset involved in this transaction</CardDescription>
+              <CardDescription>
+                Asset involved in this transaction
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -179,8 +210,12 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
                 <div className="space-y-2">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium">Asset #{transactionData.asset.id}</p>
-                      <p className="text-sm text-muted-foreground">{transactionData.asset.name}</p>
+                      <p className="font-medium">
+                        Asset #{transactionData.asset.id}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {transactionData.asset.name}
+                      </p>
                     </div>
                     <Link
                       href={`/asset/${transactionData.asset.id}`}
@@ -190,7 +225,9 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
                       <ArrowUpRight className="ml-1 h-4 w-4" />
                     </Link>
                   </div>
-                  <p className="text-sm text-muted-foreground">{transactionData.asset.type}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {transactionData.asset.type}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -198,6 +235,5 @@ export default function TransactionDetailsPage({ params }: { params: { id: strin
         </div>
       </div>
     </div>
-  )
+  );
 }
-

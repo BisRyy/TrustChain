@@ -111,7 +111,7 @@ export default function AssetDetailsPage({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href="/"
+                href="/dashboard"
                 className="text-muted-foreground hover:text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />
