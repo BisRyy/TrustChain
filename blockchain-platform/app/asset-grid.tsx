@@ -21,6 +21,7 @@ import { useState } from "react";
 export function AssetGrid() {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedAssetId, setSelectedAssetId] = useState<string>("");
+  const [selectedAssetName, setSelectedAssetName] = useState<string>("");
   const account = useActiveAccount();
 
   const { data: assets, isPending: isLoadingAssets } = useReadContract({
@@ -52,6 +53,7 @@ export function AssetGrid() {
                   size="icon"
                   onClick={() => {
                     setSelectedAssetId(asset.id.toString());
+                    setSelectedAssetName(asset.name);
                     setQrDialogOpen(true);
                   }}
                 >
@@ -120,7 +122,7 @@ export function AssetGrid() {
         open={qrDialogOpen}
         onOpenChange={setQrDialogOpen}
         assetId={selectedAssetId}
-        assetName="Bisrat"
+        assetName={selectedAssetName}
       />
     </div>
   );

@@ -24,7 +24,7 @@ export function QrCodeDialog({
   assetId,
   assetName,
 }: QrCodeDialogProps) {
-  const verificationUrl = `${window.location.origin}/verify/${assetId}`;
+  const verificationUrl = `${window.location.origin}/asset/${assetId}`;
   const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const downloadQrCode = async () => {
@@ -58,7 +58,7 @@ export function QrCodeDialog({
         // Draw logo
         const logo = new Image();
         logo.crossOrigin = "anonymous";
-        logo.src = "/trustwallet-logo.svg";
+        logo.src = "/shield.svg";
 
         await new Promise((logoResolve) => {
           logo.onload = () => {
@@ -119,7 +119,7 @@ export function QrCodeDialog({
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
-                  src="/trustwallet-logo.svg"
+                  src="/shield.svg"
                   alt="TrustWallet"
                   className="w-12 h-12 bg-white rounded-full p-2"
                 />
