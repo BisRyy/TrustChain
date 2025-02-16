@@ -78,7 +78,8 @@ export function VerifyDialog() {
   function handleQrCodeScanned(result: string) {
     // Extract asset ID from QR code data
     // Assuming QR code contains data in format "asset:0001"
-    const id = result.split(":")[1];
+    const results = result.split("/");
+    const id = results[results.length - 1];
     if (id) {
       handleVerify(id);
     }
